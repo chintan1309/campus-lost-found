@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Post an Item — Campus Lost & Found{% endblock %}
+{% block meta_description %}Post your lost or found campus item. Upload a photo and our AI will find the best matches.{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width:720px;">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4 fade-up">
+    <ol class="breadcrumb" style="background:none;padding:0;font-size:.875rem;">
+      <li class="breadcrumb-item"><a href="{{ url_for('index') }}" style="color:var(--primary);">Home</a></li>
+      <li class="breadcrumb-item active" style="color:var(--text-muted);">Post Item</li>
+    </ol>
+  </nav>
+
+  <!-- Heading -->
+  <div class="mb-4 fade-up fade-up-1">
+    <span class="section-pill"><i class="bi bi-upload me-1"></i>New Post</span>
+    <h1 class="fw-800 mb-1" style="font-size:2rem;">Post an Item</h1>
+    <p style="color:var(--text-muted);">
+      Fill in the details below. Our AI will automatically find matching items from the opposite category.
+    </p>
+  </div>
+
+  <!-- How it works strip -->
+  <div class="card mb-4 fade-up fade-up-2 p-3"
+       style="background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.25);">
+    <div class="d-flex flex-wrap gap-3">
+      {% for step, icon, label in [
+          ('1', 'pencil-square', 'Fill in details'),
+          ('2', 'image',         'Upload a photo'),
+          ('3', 'cpu',           'AI extracts features'),
+          ('4', 'stars',         'Top 5 matches returned')
+      ] %}
+        <div class="d-flex align-items-center gap-2" style="font-size:.875rem;">
+          <div style="width:26px;height:26px;border-radius:50%;background:var(--primary);
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:.75rem;font-weight:700;flex-shrink:0;">{{ step }}</div>
+          <i class="bi bi-{{ icon }}" style="color:#a78bfa;"></i>
+          <span style="color:var(--text-muted);">{{ label }}</span>
+        </div>
+        {% if not loop.last %}<span style="color:var(--border);">→</span>{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Upload Form -->
+  <form method="POST" action="{{ url_for('upload') }}"
+        enctype="multipart/form-data" id="uploadForm"
+        class="card p-4 fade-up fade-up-3" novalidate>
+
+    <div class="row g-4">
+
+      <!-- Title -->
+      <div class="col-12">
+        <label class="form-label" for="titleInput">
+          <i class="bi bi-tag me-1"></i>Item Title <span style="color:#ef4444;">*</span>
+        </label>
+        <input type="text" class="form-control" id="titleInput" name="title"
+               placeholder="e.g. Blue backpack with laptop sticker"
+               required maxlength="120" />
+      </div>
+
+      <!-- Status -->
+      <div class="col-12 col-sm-6">
+        <label class="form-label" for="statusSelect">
+          <i class="bi bi-toggle-on me-1"></i>Status <span style="color:#ef4444;">*</span>
+        </label>
+        <select class="form-select" id="statusSelect" name="status" required>
+          <option value="" disabled selected>Select status…</option>
+          <option value="lost">🔴 Lost — I lost this item</option>
+          <option value="found">🟢 Found — I found this item</option>
+        </select>
+      </div>
+
+      <!-- Contact info -->
+      <div class="col-12 col-sm-6">
+        <label class="form-label" for="contactInput">
+          <i class="bi bi-envelope me-1"></i>Contact Info
+        </label>
+        <input type="text" class="form-control" id="contactInput" name="contact_info"
+               placeholder="Email or phone number" maxlength="200" />
+      </div>
+
+      <!-- Description -->
+      <div class="col-12">
+        <label class="form-label" for="descInput">
+          <i class="bi bi-card-text me-1"></i>Description
+        </label>
+        <textarea class="form-control" id="descInput" name="description" rows="3"
+                  placeholder="Describe the item in more detail — colour, size, where last seen…"
+                  maxlength="1000"></textarea>
+      </div>
+
+      <!-- Image upload -->
+      <div class="col-12">
+        <label class="form-label">
+          <i class="bi bi-camera me-1"></i>Photo <span style="color:#ef4444;">*</span>
+        </label>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imageInput').click();">
+          <i class="bi bi-cloud-upload upload-icon d-block mb-2"></i>
+          <p class="mb-1 fw-600">Click to choose a photo</p>
+          <small style="color:var(--text-muted);">PNG, JPG, JPEG, GIF, WEBP — max 16 MB</small>
+          <input type="file" class="d-none" id="imageInput" name="image"
+                 accept="image/*" required />
+          <img id="imagePreview" src="" alt="Preview" />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Submit -->
+    <div class="d-flex gap-3 mt-4">
+      <button type="submit" class="btn btn-primary-custom flex-grow-1" id="submitBtn">
+        <i class="bi bi-cpu me-2"></i>Post &amp; Find Matches
+      </button>
+      <a href="{{ url_for('index') }}" class="btn btn-outline-custom" id="cancelBtn">Cancel</a>
+    </div>
+
+    <p class="mt-3 mb-0 text-center" style="color:var(--text-muted);font-size:.8rem;">
+      <i class="bi bi-shield-check me-1"></i>
+      Your image is processed locally. MobileNetV2 runs on this server — no third-party APIs used.
+    </p>
+  </form>
+</div>
+
+{% block extra_js %}
+<script>
+  // Drag-and-drop support for upload zone
+  const zone = document.getElementById('uploadZone');
+  const input = document.getElementById('imageInput');
+
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--primary)';
+    zone.style.background  = 'rgba(99,102,241,.08)';
+  });
+  zone.addEventListener('dragleave', () => {
+    zone.style.borderColor = '';
+    zone.style.background  = '';
+  });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = '';
+    zone.style.background  = '';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+
+  // Client-side validation
+  document.getElementById('uploadForm').addEventListener('submit', function (e) {
+    const title  = document.getElementById('titleInput').value.trim();
+    const status = document.getElementById('statusSelect').value;
+    const file   = document.getElementById('imageInput').files[0];
+    if (!title || !status || !file) {
+      e.preventDefault();
+      alert('Please fill in the title, status, and upload a photo.');
+    }
+  });
+</script>
+{% endblock %}
+{% endblock %}
